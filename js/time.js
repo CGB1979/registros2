@@ -164,10 +164,12 @@ export function calculateDay(record, date, holiday, settings = {}) {
     counted = required;
   } else if (sunday || holidayWorked) {
     // Domingo/feriado: el día trabajado cuenta como 1 jornal para el
-    // registro de jornadas, pero TODAS las horas reales computables
-    // se clasifican al 100 %.
+    // registro de jornadas, pero todas las horas se clasifican al 100 %.
+    // El total del día se redondea a horas enteras; no se arrastran
+    // minutos sobrantes entre jornadas. Con la tolerancia actual de 10 min,
+    // 07:50 -> 16:00 (8h10) computa como 8h al 100 %.
     counted = required;
-    extra100 = reference;
+    extra100 = roundExtraMinutes(reference);
   } else if (saturday) {
     const type = record?.saturdayType || "provisional";
     if (type === "voluntario") {

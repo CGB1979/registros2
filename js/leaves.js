@@ -215,6 +215,25 @@ export function rollbackLeaveUsageForDate(state, dateKey) {
   state.leaves.fullUsed = state.leaves.fullUsed.filter(item => item.usedOn !== dateKey);
   state.leaves.halfUsed = state.leaves.halfUsed.filter(item => item.usedOn !== dateKey);
 
+  // Si se elimina el día que ORIGINÓ un franco/medio franco, ese beneficio
+  // también debe desaparecer. Esto es importante en las pruebas: no alcanza
+  // con borrar el registro del calendario porque syncAllGenerated es
+  // acumulativo y no debe dejar beneficios huérfanos.
+  const fullGeneratedIds = new Set(
+    state.leaves.fullGenerated.filter(item => item.date === dateKey).map(item => item.id)
+  );
+  const halfGeneratedIds = new Set(
+    state.leaves.halfGenerated.filter(item => item.date === dateKey).map(item => item.id)
+  );
+
+  state.leaves.fullGenerated = state.leaves.fullGenerated.filter(item => item.date !== dateKey);
+  state.leaves.halfGenerated = state.leaves.halfGenerated.filter(item => item.date !== dateKey);
+
+  // Si alguno de esos beneficios ya había sido usado en otra fecha,
+  // también se elimina ese consumo porque su origen dejó de existir.
+  state.leaves.fullUsed = state.leaves.fullUsed.filter(item => !fullGeneratedIds.has(item.id));
+  state.leaves.halfUsed = state.leaves.halfUsed.filter(item => !halfGeneratedIds.has(item.id));
+
   // Las deudas adelantadas nacidas de este día también se revierten.
   state.leaves.fullDebt = state.leaves.fullDebt.filter(item => !(item.date === dateKey && item.source === "adelantado"));
   state.leaves.halfDebt = state.leaves.halfDebt.filter(item => !(item.date === dateKey && (item.source === "adelantado" || item.source === "adelantado_para_cubrir_dia")));
