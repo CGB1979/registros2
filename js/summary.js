@@ -83,13 +83,13 @@ export function renderSummary(state, date = new Date()) {
     </section>
     <section class="cl-card">
       <h3>Jornales</h3>
-      <div class="cl-stat"><div class="value">${totals.jornales}</div><div class="label">jornales enteros de 8 horas</div></div>
+      <button type="button" class="cl-stat cl-stat-action" data-summary-detail="jornales"><div class="value">${totals.jornales}</div><div class="label">jornales enteros de 8 horas</div></button>
     </section>
     <section class="cl-card">
       <h3>Horas extras</h3>
       <div class="cl-grid-2">
-        <div class="cl-stat"><div class="value">${formatHours(totals.extra50)}</div><div class="label">Al 50 %</div></div>
-        <div class="cl-stat"><div class="value">${formatHours(totals.extra100)}</div><div class="label">Al 100 %</div></div>
+        <button type="button" class="cl-stat cl-stat-action" data-summary-detail="extra50"><div class="value">${formatHours(totals.extra50)}</div><div class="label">Al 50 %</div></button>
+        <button type="button" class="cl-stat cl-stat-action" data-summary-detail="extra100"><div class="value">${formatHours(totals.extra100)}</div><div class="label">Al 100 %</div></button>
       </div>
     </section>
     <section class="cl-card">
@@ -97,7 +97,7 @@ export function renderSummary(state, date = new Date()) {
       <div class="cl-grid-2">
         <div class="cl-stat"><div class="value">${formatHours(totals.real)}</div><div class="label">Horas reales</div></div>
         <div class="cl-stat"><div class="value">${formatHours(totals.counted)}</div><div class="label">Horas computadas</div></div>
-        <div class="cl-stat"><div class="value">${totals.reviews}</div><div class="label">Revisiones</div></div>
+        <button type="button" class="cl-stat cl-stat-action" data-review-detail><div class="value">${totals.reviews}</div><div class="label">Revisiones</div></button>
         <div class="cl-stat"><div class="value">${totals.holidayWorked}</div><div class="label">Feriados trabajados</div></div>
       </div>
     </section>

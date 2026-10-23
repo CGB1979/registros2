@@ -38,20 +38,21 @@ function renderCalendarScreen() {
   const calendar = renderCalendar(state, view);
   const holidays = getHolidays(state, view.year);
   const today = isoDate(new Date());
-  const { start, end, totals } = calculateBillingCycle(state, new Date(view.year, view.month, 15));
+  const { start, end, totals, rows } = calculateBillingCycle(state, new Date(view.year, view.month, 15));
   main.innerHTML = `${calendar}
     <section class="cl-card">
       <h3>Resumen del ciclo de facturación</h3>
       <div class="cl-muted cl-small">${start.toLocaleDateString("es-AR")} al ${end.toLocaleDateString("es-AR")}</div>
       <div class="cl-grid-3">
-        <div class="cl-stat"><div class="value">${totals.jornales}</div><div class="label">Jornales</div></div>
-        <div class="cl-stat"><div class="value">${formatHours(totals.extra50)}</div><div class="label">Extras 50 %</div></div>
-        <div class="cl-stat"><div class="value">${formatHours(totals.extra100)}</div><div class="label">Extras 100 %</div></div>
+        <button type="button" class="cl-stat cl-stat-action" data-summary-detail="jornales"><div class="value">${totals.jornales}</div><div class="label">Jornales</div></button>
+        <button type="button" class="cl-stat cl-stat-action" data-summary-detail="extra50"><div class="value">${formatHours(totals.extra50)}</div><div class="label">Extras 50 %</div></button>
+        <button type="button" class="cl-stat cl-stat-action" data-summary-detail="extra100"><div class="value">${formatHours(totals.extra100)}</div><div class="label">Extras 100 %</div></button>
       </div>
     </section>
     <section class="cl-note">Hoy: ${today}. Última actualización de feriados: ${state.holidays.lastUpdate ? new Date(state.holidays.lastUpdate).toLocaleString("es-AR") : "lista integrada / sin actualización externa"}.</section>`;
 
   bindCalendar(main, view, openDayModal);
+  bindSummaryDetailButtons(main, { start, end, rows, totals });
   main.querySelector("[data-calendar-prev]").addEventListener("click", () => changeMonth(-1));
   main.querySelector("[data-calendar-next]").addEventListener("click", () => changeMonth(1));
 }
@@ -313,7 +314,104 @@ function useFullForDay(dateKey) {
   save(); closeModal(); openDayModal(dateKey);
 }
 
-function renderSummaryScreen() { main.innerHTML = renderSummary(state); }
+function renderSummaryScreen() {
+  const cycle = calculateBillingCycle(state, new Date());
+  main.innerHTML = renderSummary(state);
+  bindSummaryDetailButtons(main, cycle);
+}
+
+function bindSummaryDetailButtons(root, cycle) {
+  root.querySelectorAll("[data-summary-detail]").forEach(button => {
+    bindDoubleTap(button, () => openSummaryDetail(button.dataset.summaryDetail, cycle));
+  });
+  root.querySelectorAll("[data-review-detail]").forEach(button => {
+    bindDoubleTap(button, () => openReviewList(cycle));
+  });
+}
+
+function openSummaryDetail(kind, cycle) {
+  const rows = cycle.rows || [];
+  let title = "Detalle";
+  let items = [];
+
+  if (kind === "jornales") {
+    title = "Días computados como jornales";
+    items = rows.filter(row => {
+      if (row.record.leaveMode === "medio_franco") return true;
+      if (row.calc.worked && (row.calc.sunday || row.calc.holidayWorked)) return true;
+      return row.calc.countedMinutes >= 8 * 60 && !row.record.leaveMode;
+    }).map(row => ({ date: row.key, detail: jornalReason(row) }));
+  } else if (kind === "extra50") {
+    title = "Días con horas extras al 50 %";
+    items = rows.filter(row => row.calc.extra50Minutes > 0).map(row => ({ date: row.key, detail: formatHours(row.calc.extra50Minutes) }));
+  } else if (kind === "extra100") {
+    title = "Días con horas extras al 100 %";
+    items = rows.filter(row => row.calc.extra100Minutes > 0).map(row => ({ date: row.key, detail: formatHours(row.calc.extra100Minutes) }));
+  }
+
+  items.sort((a, b) => b.date.localeCompare(a.date));
+  const listHtml = items.length ? items.map(item => `
+    <button type="button" class="cl-list-item cl-summary-detail-item" data-summary-date="${escapeHtml(item.date)}">
+      <span class="cl-list-dot"></span>
+      <span class="cl-list-content">
+        <span class="cl-list-title">${escapeHtml(formatDate(item.date))}</span>
+        <span class="cl-list-meta">${escapeHtml(item.detail)}</span>
+      </span>
+      <span>›</span>
+    </button>`).join("") : `<div class="cl-note">No hay días registrados para este concepto en el ciclo.</div>`;
+
+  openModal(`${modalHead(title)}
+    <div class="cl-list">${listHtml}</div>
+    <div class="cl-note">Doble toque sobre una fecha para abrir el registro de ese día en el calendario.</div>`);
+
+  document.querySelectorAll("[data-summary-date]").forEach(button => {
+    bindDoubleTap(button, () => goToCalendarDate(button.dataset.summaryDate));
+  });
+}
+
+function jornalReason(row) {
+  if (row.record.leaveMode === "medio_franco") return "Jornal cubierto con medio franco";
+  if (row.calc.holidayWorked && row.calc.sunday) return "Domingo trabajado";
+  if (row.calc.holidayWorked) return "Feriado trabajado";
+  if (row.calc.sunday) return "Domingo trabajado";
+  if (row.record.saturdayType === "voluntario") return "Sábado voluntario trabajado";
+  if (row.record.saturdayType === "mandatory") return "Sábado obligatorio trabajado";
+  return "Jornada normal trabajada";
+}
+
+function reviewReason(row) {
+  const record = row.record || {};
+  const calc = row.calc || {};
+  if (record.lateDecision === "tarde") return "Llegada tarde marcada para revisión";
+  if (record.lateDecision === "cambio_turno") return "Posible cambio de turno indicado";
+  if (record.needsReview) return "Marcación indicada manualmente para revisión";
+  if (!record.leaveMode && calc.referenceMinutes < calc.requiredMinutes) {
+    const missing = Math.max(0, calc.requiredMinutes - calc.referenceMinutes);
+    return `Jornada incompleta: faltan ${formatHours(missing)}`;
+  }
+  return "La jornada requiere revisión según las reglas de control";
+}
+
+function openReviewList(cycle) {
+  const items = (cycle.rows || []).filter(row => row.calc.review).sort((a, b) => b.key.localeCompare(a.key));
+  const listHtml = items.length ? items.map(row => `
+    <button type="button" class="cl-list-item cl-summary-detail-item" data-review-date="${escapeHtml(row.key)}">
+      <span class="cl-list-dot"></span>
+      <span class="cl-list-content">
+        <span class="cl-list-title">${escapeHtml(formatDate(row.key))}</span>
+        <span class="cl-list-meta">${escapeHtml(reviewReason(row))}</span>
+      </span>
+      <span>›</span>
+    </button>`).join("") : `<div class="cl-note">No hay revisiones en el ciclo.</div>`;
+
+  openModal(`${modalHead("Días con revisión")}
+    <div class="cl-list">${listHtml}</div>
+    <div class="cl-note">Doble toque sobre una fecha para abrir el registro de ese día en el calendario.</div>`);
+
+  document.querySelectorAll("[data-review-date]").forEach(button => {
+    bindDoubleTap(button, () => goToCalendarDate(button.dataset.reviewDate));
+  });
+}
 
 function renderLeavesScreen() {
   syncAllGenerated(state);

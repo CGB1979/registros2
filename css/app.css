@@ -115,6 +115,8 @@ button { -webkit-tap-highlight-color: transparent; }
 .cl-stat { border: 1px solid var(--cl-border); border-radius: 14px; padding: 11px; background: white; }
 .cl-stat .value { font-size: 22px; font-weight: 850; line-height: 1; }
 .cl-stat .label { font-size: 11px; color: var(--cl-muted); margin-top: 5px; }
+.cl-stat-action { width: 100%; border: 1px solid var(--cl-border); color: inherit; text-align: left; cursor: pointer; }
+.cl-stat-action:active { transform: scale(.99); }
 
 .cl-btn { min-height: 46px; border: 0; border-radius: 12px; padding: 10px 14px; font-weight: 750; cursor: pointer; }
 .cl-btn-primary { background: var(--cl-primary); color: white; }
