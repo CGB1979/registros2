@@ -192,11 +192,17 @@ export function calculateDay(record, date, holiday, settings = {}) {
     const scheduledStart = schedule ? minutesFromTime(schedule.entrada) : null;
 
     if (scheduledEnd !== null) {
-      const workStart = buildIntervals(record).reduce((min, x) => Math.min(min, x.start), Infinity);
+      const intervals = buildIntervals(record);
+      const workStart = intervals.reduce((min, x) => Math.min(min, x.start), Infinity);
+      const lastEnd = intervals.reduce((max, x) => Math.max(max, x.end), -Infinity);
       const firstStart = Number.isFinite(workStart) ? workStart : scheduledStart;
-      const effectiveEnd = reference;
+      // Para decidir si hubo extra se compara la hora de salida real con
+      // la hora de salida del turno, no la duración total del intervalo.
+      // Esto evita que una entrada anticipada convierta minutos tempranos
+      // en horas extra.
+      const effectiveEnd = Number.isFinite(lastEnd) ? lastEnd : reference;
 
-      counted = Math.min(required, Math.max(0, effectiveEnd - Math.min(firstStart ?? scheduledStart, scheduledStart ?? firstStart)));
+      counted = Math.min(required, Math.max(0, reference));
 
       // La llegada antes de hora nunca se convierte en extra.
       // El jornal normal se limita a 8 h.
@@ -204,7 +210,9 @@ export function calculateDay(record, date, holiday, settings = {}) {
 
       if (effectiveEnd > scheduledEnd) {
         const rawExtra = effectiveEnd - scheduledEnd;
-        extra100 = roundExtraMinutes(rawExtra);
+        // En una jornada normal, todo el excedente posterior al horario
+        // oficial de salida corresponde a horas extra al 50 %.
+        extra50 = roundExtraMinutes(rawExtra);
       }
     } else {
       counted = Math.min(reference, required);
@@ -223,15 +231,15 @@ export function calculateDay(record, date, holiday, settings = {}) {
     const specialMinimum = minutesFromTime(scheduleForSpecial.salidaMinimaJornal || "13:30");
     const lastEnd = buildIntervals(record).reduce((max, x) => Math.max(max, x.end), 0);
 
-    if (reference >= specialMinimum && reference <= specialEnd) {
+    if (lastEnd >= specialMinimum && lastEnd <= specialEnd) {
       counted = required;
       extra50 = 0;
       extra100 = 0;
-    } else if (reference > specialEnd) {
+    } else if (lastEnd > specialEnd) {
       counted = required;
-      extra50 = 0;
-      extra100 = roundExtraMinutes(reference - specialEnd);
-    } else if (specialStart !== null && reference < specialMinimum) {
+      extra50 = roundExtraMinutes(lastEnd - specialEnd);
+      extra100 = 0;
+    } else if (specialStart !== null && lastEnd < specialMinimum) {
       counted = Math.min(required, reference);
     }
   }
