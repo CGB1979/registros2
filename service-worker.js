@@ -1,4 +1,4 @@
-const CACHE = "control-laboral-v14";
+const CACHE = "control-laboral-v15";
 const ASSETS = [
   "./",
   "./index.html",
