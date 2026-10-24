@@ -53,8 +53,8 @@ function renderCalendarScreen() {
       <div class="cl-muted cl-small">${start.toLocaleDateString("es-AR")} al ${end.toLocaleDateString("es-AR")}</div>
       <div class="cl-grid-3">
         <button type="button" class="cl-stat cl-stat-action" data-summary-detail="jornales"><div class="value">${totals.jornales}</div><div class="label">Jornales</div></button>
-        <button type="button" class="cl-stat cl-stat-action" data-summary-detail="extra50"><div class="value">${formatHours(totals.extra50)}</div><div class="label">Extras 50 %</div></button>
-        <button type="button" class="cl-stat cl-stat-action" data-summary-detail="extra100"><div class="value">${formatHours(totals.extra100)}</div><div class="label">Extras 100 %</div></button>
+        <button type="button" class="cl-stat cl-stat-action" data-summary-detail="extra50"><div class="value">${formatHours(totals.extra50)}</div><div class="label">Extras 50%</div></button>
+        <button type="button" class="cl-stat cl-stat-action" data-summary-detail="extra100"><div class="value">${formatHours(totals.extra100)}</div><div class="label">Extras 100%</div></button>
       </div>
     </section>
     <section class="cl-note">Hoy: ${today}. Última actualización de feriados: ${state.holidays.lastUpdate ? new Date(state.holidays.lastUpdate).toLocaleString("es-AR") : "lista integrada / sin actualización externa"}.</section>`;
