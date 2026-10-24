@@ -350,10 +350,10 @@ function openSummaryDetail(kind, cycle) {
       return row.calc.countedMinutes >= 8 * 60 && !row.record.leaveMode;
     }).map(row => ({ date: row.key, detail: jornalReason(row) }));
   } else if (kind === "extra50") {
-    title = "Días con horas extras al 50 %";
+    title = "Días con horas extras al 50%";
     items = rows.filter(row => row.calc.extra50Minutes > 0).map(row => ({ date: row.key, detail: formatHours(row.calc.extra50Minutes) }));
   } else if (kind === "extra100") {
-    title = "Días con horas extras al 100 %";
+    title = "Días con horas extras al 100%";
     items = rows.filter(row => row.calc.extra100Minutes > 0).map(row => ({ date: row.key, detail: formatHours(row.calc.extra100Minutes) }));
   }
 
