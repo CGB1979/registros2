@@ -1,4 +1,4 @@
-const CACHE = "control-laboral-v13";
+const CACHE = "control-laboral-v14";
 const ASSETS = [
   "./",
   "./index.html",
@@ -13,6 +13,7 @@ const ASSETS = [
   "./js/summary.js",
   "./js/leaves.js",
   "./js/ui.js",
+  "./js/tutorial.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png"

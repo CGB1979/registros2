@@ -201,3 +201,112 @@ button { -webkit-tap-highlight-color: transparent; }
 .cl-history-item { align-items: start; }
 .cl-history-detail { color: var(--cl-text); font-size: 12px; line-height: 1.45; margin-top: 4px; }
 .cl-history-detail strong { font-weight: 800; }
+
+/* ==========================================================
+   MODO OSCURO
+========================================================== */
+:root[data-cl-theme="dark"] {
+  --cl-bg: #0f1720;
+  --cl-card: #17212b;
+  --cl-text: #e7edf4;
+  --cl-muted: #9aa8b7;
+  --cl-border: #2a3744;
+  --cl-primary: #4da3ff;
+  --cl-primary-soft: #173451;
+  --cl-success: #39c184;
+  --cl-success-soft: #14382a;
+  --cl-orange: #f4ab5b;
+  --cl-orange-soft: #3a2b1c;
+  --cl-green-soft: #18372a;
+  --cl-red: #ef717c;
+  --cl-red-soft: #3b2026;
+  --cl-yellow: #e9bd45;
+  --cl-yellow-soft: #3b321b;
+  --cl-purple: #9b8ce8;
+  --cl-purple-soft: #29244a;
+  --cl-shadow: 0 5px 20px rgba(0,0,0,.28);
+}
+
+:root[data-cl-theme="dark"] .cl-topbar,
+:root[data-cl-theme="dark"] .cl-bottom-nav { background: rgba(15,23,32,.97); }
+:root[data-cl-theme="dark"] .cl-icon-btn,
+:root[data-cl-theme="dark"] .cl-month-nav button,
+:root[data-cl-theme="dark"] .cl-day,
+:root[data-cl-theme="dark"] .cl-stat,
+:root[data-cl-theme="dark"] .cl-btn-outline,
+:root[data-cl-theme="dark"] .cl-list-item,
+:root[data-cl-theme="dark"] .cl-detail-date,
+:root[data-cl-theme="dark"] .cl-modal,
+:root[data-cl-theme="dark"] .cl-input { background: var(--cl-card); color: var(--cl-text); }
+:root[data-cl-theme="dark"] .cl-day.saturday { background: var(--cl-card); }
+:root[data-cl-theme="dark"] .cl-tabs { background: #202b36; }
+:root[data-cl-theme="dark"] .cl-tab.active { background: #273542; color: var(--cl-primary); }
+:root[data-cl-theme="dark"] .cl-btn-secondary { background: #25313c; color: var(--cl-text); }
+:root[data-cl-theme="dark"] .cl-close { background: #25313c; color: var(--cl-text); }
+:root[data-cl-theme="dark"] .cl-note { background: #1c2833; }
+:root[data-cl-theme="dark"] .cl-list-item-used { background: #202830; border-color: #303a44; color: #8793a0; }
+:root[data-cl-theme="dark"] .cl-list-item-used .cl-list-title { color: #8793a0; }
+:root[data-cl-theme="dark"] .cl-list-item-used .cl-list-meta { color: #7f8a96; }
+:root[data-cl-theme="dark"] .cl-modal-backdrop { background: rgba(0,0,0,.64); }
+:root[data-cl-theme="dark"] .cl-day { border-color: transparent; }
+:root[data-cl-theme="dark"] .cl-day.selected { border-color: var(--cl-primary); }
+:root[data-cl-theme="dark"] .cl-tutorial-card { background: #17212b; color: var(--cl-text); }
+
+/* ==========================================================
+   TUTORIAL DE PRIMERA EJECUCIÓN
+========================================================== */
+.cl-tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: auto;
+}
+.cl-tutorial-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(9,16,24,.58);
+}
+.cl-tutorial-focus {
+  position: fixed;
+  z-index: 1001;
+  border: 2px solid var(--cl-primary);
+  border-radius: 14px;
+  box-shadow: 0 0 0 9999px rgba(9,16,24,.58), 0 0 0 5px rgba(22,119,210,.18);
+  pointer-events: none;
+  transition: all .18s ease;
+}
+.cl-tutorial-card {
+  position: absolute;
+  z-index: 1002;
+  left: 14px;
+  right: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  width: min(100% - 28px, 532px);
+  margin: 0 auto;
+  background: #fff;
+  color: var(--cl-text);
+  border: 1px solid var(--cl-border);
+  border-radius: 18px;
+  padding: 15px;
+  box-shadow: 0 15px 45px rgba(0,0,0,.24);
+}
+.cl-tutorial-step {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--cl-primary);
+  background: var(--cl-primary-soft);
+  padding: 4px 7px;
+  border-radius: 999px;
+  margin-bottom: 7px;
+}
+.cl-tutorial-card h2 { margin: 0 0 6px; font-size: 19px; }
+.cl-tutorial-card p { margin: 0; color: var(--cl-muted); font-size: 13px; line-height: 1.45; }
+.cl-tutorial-actions { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-top: 13px; }
+.cl-tutorial-progress { display: flex; justify-content: center; gap: 4px; }
+.cl-tutorial-progress span { width: 6px; height: 6px; border-radius: 50%; background: #c8d1da; }
+.cl-tutorial-progress span.active { width: 18px; border-radius: 999px; background: var(--cl-primary); }
+@media (max-width: 360px) {
+  .cl-tutorial-actions { grid-template-columns: 1fr 1fr; }
+  .cl-tutorial-progress { grid-column: 1 / -1; grid-row: 1; }
+}

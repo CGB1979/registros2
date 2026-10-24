@@ -6,6 +6,7 @@ import { renderCalendar, bindCalendar } from "./calendar.js";
 import { renderSummary, calculateMonth, calculateBillingCycle, formatHours } from "./summary.js";
 import { syncAllGenerated, syncSaturdayClassifications, syncGeneratedForDay, useFullLeave, useHalfLeave, useThreeHalvesForFullDay, leaveTotals, availableFull, availableHalf, debtFull, debtHalf, markDebtPaid, rollbackLeaveUsageForDate } from "./leaves.js";
 import { openModal, closeModal, modalHead, escapeHtml, confirmAction } from "./ui.js";
+import { startTutorial, resetTutorial } from "./tutorial.js";
 
 const state = loadState();
 const view = { screen: "calendar", year: new Date().getFullYear(), month: new Date().getMonth(), selected: isoDate(new Date()) };
@@ -15,6 +16,13 @@ function save() { saveState(state); }
 function dateFromKey(key) { const [y,m,d] = key.split("-").map(Number); return new Date(y, m-1, d); }
 function formatDate(key) { return dateFromKey(key).toLocaleDateString("es-AR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }); }
 function currentTime() { return new Date().toTimeString().slice(0,5); }
+
+function applyTheme(theme = state.settings.theme || "light") {
+  const normalized = theme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.clTheme = normalized;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", normalized === "dark" ? "#0f1720" : "#ffffff");
+}
 
 function ensureSaturdayClassifications() {
   syncSaturdayClassifications(state);
@@ -618,7 +626,8 @@ function renderSettings() {
     tolerance: Number(state.settings.tolerance ?? CONFIG.TOLERANCIA_MINUTOS),
     roundIn: state.settings.roundIn ?? CONFIG.REDONDEO_ENTRADA,
     roundOut: state.settings.roundOut ?? CONFIG.REDONDEO_SALIDA,
-    feriadoExcesoGeneraFranco: Boolean(state.settings.feriadoExcesoGeneraFranco ?? CONFIG.FERIADO_EXCESO_GENERA_FRANCO)
+    feriadoExcesoGeneraFranco: Boolean(state.settings.feriadoExcesoGeneraFranco ?? CONFIG.FERIADO_EXCESO_GENERA_FRANCO),
+    theme: state.settings.theme === "dark" ? "dark" : "light"
   };
 
   openModal(`${modalHead("Configuración")}
@@ -629,9 +638,14 @@ function renderSettings() {
       <div class="cl-form-group"><label>Redondeo de salida</label><select id="cl-setting-round-out" class="cl-input"><option value="ninguno">Sin redondeo</option><option value="abajo">Abajo</option><option value="arriba">Arriba</option><option value="cercano">Más cercano</option></select></div>
       <div class="cl-form-group"><label>Feriado trabajado genera franco si supera 8 h</label><select id="cl-setting-holiday-leave" class="cl-input"><option value="false">No</option><option value="true">Sí</option></select></div>
     </section>
+    <section class="cl-card" style="box-shadow:none;margin:0 0 10px"><h3>Apariencia</h3>
+      <div class="cl-form-group"><label for="cl-setting-theme">Tema de la aplicación</label><select id="cl-setting-theme" class="cl-input"><option value="light">Modo claro</option><option value="dark">Modo oscuro</option></select></div>
+      <div class="cl-note">El tema modifica solamente la apariencia. Tus registros y cálculos no cambian.</div>
+    </section>
     <section class="cl-card" style="box-shadow:none;margin:0"><h3>Datos</h3>
       <button class="cl-btn cl-btn-outline cl-btn-full" id="cl-export">Exportar respaldo JSON</button>
       <label class="cl-btn cl-btn-secondary cl-btn-full" style="display:block;text-align:center;margin-top:8px;cursor:pointer">Importar respaldo <input id="cl-import" type="file" accept="application/json" hidden></label>
+      <button class="cl-btn cl-btn-secondary cl-btn-full" id="cl-show-tutorial" type="button" style="margin-top:8px">Ver tutorial nuevamente</button>
       <div class="cl-note cl-danger-note">El almacenamiento local no sincroniza automáticamente entre dispositivos. Borrar los datos del navegador puede provocar pérdida de información si no tenés un respaldo.</div>
     </section>
     <div class="cl-modal-actions">
@@ -642,18 +656,23 @@ function renderSettings() {
   const rIn = document.getElementById("cl-setting-round-in");
   const rOut = document.getElementById("cl-setting-round-out");
   const holidayLeave = document.getElementById("cl-setting-holiday-leave");
+  const theme = document.getElementById("cl-setting-theme");
   rIn.value = draft.roundIn;
   rOut.value = draft.roundOut;
   holidayLeave.value = String(draft.feriadoExcesoGeneraFranco);
+  theme.value = draft.theme;
+  theme.addEventListener("change", () => applyTheme(theme.value));
 
-  document.getElementById("cl-settings-cancel").addEventListener("click", closeModal);
+  document.getElementById("cl-settings-cancel").addEventListener("click", () => { applyTheme(draft.theme); closeModal(); });
   document.getElementById("cl-settings-save").addEventListener("click", () => {
     state.settings.tolerance = Math.max(0, Number(document.getElementById("cl-setting-tolerance").value) || 0);
     state.settings.roundIn = rIn.value;
     state.settings.roundOut = rOut.value;
     state.settings.feriadoExcesoGeneraFranco = holidayLeave.value === "true";
+    state.settings.theme = theme.value === "dark" ? "dark" : "light";
     addAudit(state, "configuracion_actualizada", { ...state.settings });
     save();
+    applyTheme(state.settings.theme);
     closeModal();
     render();
   });
@@ -666,8 +685,15 @@ function renderSettings() {
       if (!confirm("Esto reemplazará los datos actuales de esta app. ¿Continuar?")) return;
       Object.keys(state).forEach(k => delete state[k]);
       Object.assign(state, imported);
+      applyTheme(state.settings.theme);
       save(); closeModal(); render();
     } catch (error) { alert(error.message); }
+  });
+
+  document.getElementById("cl-show-tutorial").addEventListener("click", () => {
+    closeModal();
+    resetTutorial();
+    setTimeout(() => startTutorial({ onNavigate: (screen) => { view.screen = screen; render(); }, openSettings: renderSettings, closeModal }), 80);
   });
 }
 
@@ -698,7 +724,13 @@ navigator.serviceWorker?.addEventListener("controllerchange", () => {
   }
 });
 
+applyTheme(state.settings.theme || "light");
 comprobarVersionYActualizar();
 updateExternalHolidays(state).then(result => { if (result.updated) { save(); if (view.screen === "calendar") render(); } });
 
 render();
+setTimeout(() => startTutorial({
+  onNavigate: (screen) => { view.screen = screen; render(); },
+  openSettings: renderSettings,
+  closeModal
+}), 250);
